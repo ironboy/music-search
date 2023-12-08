@@ -21,10 +21,10 @@ app.listen(3000, () =>
 // Create a connection 'db' to the database
 const db = await mysql.createConnection({
   host: '161.97.144.27',
-  port: 8098,
+  port: 'YOUR PORT',
   user: 'root',
-  password: 'guessagain98',
-  database: 'pets'
+  password: 'YOUR PASSWORD',
+  database: 'metadata'
 });
 
 // A small function for a database query
@@ -34,33 +34,33 @@ async function query(sql, listOfValues) {
 }
 
 
-// Create a REST-api route
-// When somebody asks for http://localhost:3000/api/cats
-// send som JSON based on a database query
-app.get('/api/cats', async (request, response) => {
-  // Make a database query and remember the result
-  let result = await query(`
-    SELECT *
-    FROM cats
-  `);
-  // Send a response to the client
-  response.json(result);
-});
-
-// A search route to find a cat by parts of its name
-// or parts of its description
-app.get('/api/cats/:searchTerm', async (request, response) => {
+// A search route to find music
+app.get('/api/music/:searchTerm/:searchType', async (request, response) => {
   // Get the search term from as a parameter from the route/url
   let searchTerm = request.params.searchTerm;
+  // Get teh search type a sa parameter from the route/url
+  let searchType = request.params.searchType;
   // Make a database query and remember the result
   // using the search term
-  let result = await query(`
-    SELECT *
-    FROM cats
-    WHERE 
-      LOWER(CONCAT(name, ' ', meta->'$.description')) 
-      LIKE LOWER(?)
-  `, ['%' + searchTerm + '%']);
+
+  let sql = `
+   SELECT * 
+   FROM music
+   WHERE LOWER(metadata -> '$.common.${searchType}') LIKE LOWER (?)
+  `;
+
+  // since the sql gets a bit different if you want to search all
+  // fix this with a if-clause replacing the sql
+  if (searchType == 'all') {
+    sql = `
+      SELECT *
+      FROM music
+      WHERE LOWER(metadata) LIKE LOWER (?)
+    `;
+  }
+
+  let result = await query(sql, ['%' + searchTerm + '%']);
+
   // Send a response to the client
   response.json(result);
 });
